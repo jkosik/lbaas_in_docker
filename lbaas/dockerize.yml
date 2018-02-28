@@ -1,0 +1,103 @@
+---
+
+- hosts: buda
+  become: yes
+  vars_files:
+#    - vars/lbaas4.yml
+    - "{{ varsfile }}" # run as --extra-vars="varsfile=vars/lbaas4-prod.yml"
+  tasks:
+    - name: Get UID for the service
+      set_fact: uid={{ item.uid }}
+      with_items: "{{ lbaas4 }}"
+
+    - name: Create dirs on Docker host
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: 0755   
+      with_items:
+        - /portal
+        - /portal/lbaas4
+        - /portal/lbaas4/{{ uid }}
+
+    - name: Copy Dockerfile for lbaas 
+      copy:
+        src: builds/official/Dockerfile
+        dest: /portal/lbaas4/{{ uid }}/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Build image for lbaas
+      docker_image: 
+        name: lbaas4
+        path: /portal/lbaas4/{{ uid }}
+#        force: yes #rebuilds image if name exists. Otherwise imgae is not overwritten.
+        tag: v1
+
+    - name: Generate container specific nginx.conf
+      template:
+        src: nginx.conf.j2
+        dest: /portal/lbaas4/{{ uid }}/nginx.conf-{{ item.uid }}
+        owner: ubuntu
+        group: ubuntu
+      with_items: "{{ lbaas4 }}"
+
+
+- hosts: buda
+  become: yes
+  vars_files:
+    - "{{ varsfile }}"
+  tasks:
+    - name: Build list of ports for docker -p (declare variable)
+      set_fact:
+        ports: []
+
+    - name: Build list of ports for docker -p (populate variable)
+      set_fact:
+  #      ports: "{{ ports }} + [ '{{ item.0.frontend_ip.0 }}:{{ item.1.frontend_port }}:{{ item.1.frontend_port }}' ]"
+        ports: "{{ ports }} + [ '{{ item.0.frontend_ip.0 }}:{{ item.1.frontend_port }}:{{ item.1.backend_port }}/{{ item.1.proto }}' ]"
+      with_subelements:
+        - "{{ lbaas4 }}"
+        - proxy_rule
+ 
+    - name: Debug
+      debug: "msg={{ ports }}"
+
+    - name: Run docker container in BUDA
+      docker_container:
+        name: "{{ item.uid }}-{{ item.name }}"
+        image: lbaas4:v1
+        state: started
+        restart: yes
+        restart_policy: unless-stopped
+        ports: "{{ ports }}"
+#        ports:
+#           - "10.235.13.19:80:80/tcp"
+# Expose commented in Dockerfile. docker_container module overrides it.
+        volumes:
+          - "/portal/lbaas4/{{ uid }}/nginx.conf-{{ item.uid }}:/etc/nginx/nginx.conf"
+        log_driver: syslog
+        log_opt:
+          syslog-facility: daemon
+          tag: "lbaas"  # <-- needs be a string 
+      when: item.replica == 1
+      with_items: "{{ lbaas4 }}"
+
+- hosts: all
+  become: yes
+  vars_files:
+    - "{{ varsfile }}"
+  tasks:
+    - name: Notify to Slack
+      uri:
+        url: https://hooks.slack.com/services/CHANGEME
+        method: POST
+        body: '{"channel":"#CHANGEME","username":"LBaaS","text":"LBaaS container for service *{{ item.name }}* provisioned and ready on *{{ item.fqdn }}* at {{ item.frontend_ip }}. Balanced backend: {{ item.backend_ip }}","icon_emoji":":lbaas:"}'
+        body_format: json
+      run_once: true
+      with_items: "{{ lbaas4 }}"
+      tags: slack
+
+
+
+

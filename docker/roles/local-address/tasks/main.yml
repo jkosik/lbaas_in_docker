@@ -1,0 +1,15 @@
+- name: Make sshd listen on the default address (not all addresses)
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    backup: yes
+  notify:
+    - restart sshd
+
+- name: Make rsyslogd listen on the localhost address (not all addresses)
+  copy:
+    src: rsyslog.conf
+    dest: /etc/rsyslog.conf
+    backup: yes
+  notify:
+    - restart rsyslog

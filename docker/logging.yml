@@ -1,0 +1,17 @@
+---
+
+- hosts: all
+  become: yes
+  gather_facts: true
+  roles:
+    - role: ansible-kafka-forwarder
+      kafka_vip: "CHANGEME" # fqdn or IP address
+      kafka_topic: buda-sc-docker
+      kafka_port: 9092
+      kafka_forward_default: "true"
+     #kafka_extra_log_files:
+        # - { path: "/var/log/docker.log", startmsg_regex: "^[[:digit:]]{4}-[[:digit:]]{2}-[[:digit:]]{2}", readtimeout: "10", severity: "debug", tag: docker }
+
+
+
+

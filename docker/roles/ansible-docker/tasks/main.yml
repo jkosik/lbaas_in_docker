@@ -1,0 +1,53 @@
+---
+
+- name: Delete old Docker packages
+  apt: name={{ item }} purge=yes
+  with_items:
+    - "docker"
+    - "docker-engine"
+    - "docker.io"
+  ignore_errors: yes
+
+- name: Allow APT over HTTPS
+  apt: name={{ item }} state=present update_cache=yes
+  with_items:
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - software-properties-common
+
+- name: Add APT KEY
+  apt_key: url=https://download.docker.com/linux/ubuntu/gpg state=present
+
+- name: Add docker apt repository
+  apt_repository: repo="deb https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable" state=present
+
+- name: Update apt-cache
+  apt: update_cache=yes
+
+- name: Install docker package
+  apt: name=docker-ce state=present
+  notify: docker started
+
+- name: Adding user ubuntu to docker groups to run docker without sudo
+  user: name=ubuntu
+        groups=docker
+        append=yes
+
+- name: Update permissions on /home/ubuntu/.docker for sudo-less access to docker
+  file:
+    path: /home/ubuntu/.docker
+    owner: ubuntu
+    group: ubuntu
+    recurse: yes
+
+- name: Install pip
+  apt:
+    name: python-pip
+    update_cache: yes
+
+- name: Install docker-py for Ansible
+  pip:
+    name: docker-py
+
+

@@ -1,0 +1,74 @@
+---
+
+- hosts: docker-master
+  become: yes
+  vars:
+    keepalived_options:
+      - name: "{{ name }}"
+    keepalived_vrrp_scripts:
+        chk_docker:
+          script: "{{ script }}"
+          interval: 2
+          weight: -20
+    keepalived_vrrp_instances:
+        VI_1:
+          interface: "{{ interface }}"
+          state: MASTER
+          priority: 105
+          virtual_router_id: "{{ virtual_router_id }}"
+          
+          authentication:
+            auth_type: "{{ auth_type }}"
+            auth_pass: "{{ auth_pass }}"
+          
+          virtual_ipaddresses: "{{ virtual_ipaddresses }}"
+          virtual_ipaddresses_excl: "{{ virtual_ipaddresses_excl }}"
+              
+          track_scripts:
+            - "{{ track_scripts }}"
+  roles:
+    - ansible-keepalived
+    
+
+- hosts: docker-slave
+  become: yes
+  vars:
+    keepalived_options:
+      - name: "{{ name }}"
+    keepalived_vrrp_scripts:
+        chk_docker:
+          script: "{{ script }}"
+          interval: 2
+          weight: -20
+    keepalived_vrrp_instances:
+        VI_1:
+          interface: "{{ interface }}"
+          state: SLAVE
+          priority: 90
+          virtual_router_id: "{{ virtual_router_id }}"
+          
+          authentication:
+            auth_type: "{{ auth_type }}"
+            auth_pass: "{{ auth_pass }}"
+            
+          virtual_ipaddresses: "{{ virtual_ipaddresses }}"
+          virtual_ipaddresses_excl: "{{ virtual_ipaddresses_excl }}"
+              
+          track_scripts:
+            - "{{ track_scripts }}"       
+  roles:
+    - ansible-keepalived
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

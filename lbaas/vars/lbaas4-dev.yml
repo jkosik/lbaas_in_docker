@@ -1,0 +1,20 @@
+---
+
+lbaas4:
+  - uid: ab783kee
+    name: demo
+    fqdn: ab783kee.abc.de
+    frontend_ip:
+      - 1.1.1.1
+    backend_ip:
+      - 2.1.1.1
+      - 2.1.1.2
+    proxy_rule:
+      - proto: tcp # [tcp, udp]
+        frontend_port: 80
+        backend_port: 80
+      - proto: tcp # [tcp, udp]
+        frontend_port: 222
+        backend_port: 22
+    affinity: None # [None(round-robin), least-conn, client-ip]
+    replica: 1

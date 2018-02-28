@@ -1,0 +1,83 @@
+user www-data;
+worker_processes auto;
+
+error_log  /var/log/nginx/error.log warn;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+#worker_processes  4; #not working in container 
+
+events {
+    worker_connections  19000;
+#    multi_accept off;
+}
+
+worker_rlimit_nofile 20000;
+
+
+http {
+
+	sendfile on;
+	tcp_nopush on;
+	tcp_nodelay on;
+	keepalive_timeout 65;
+	types_hash_max_size 2048;
+
+	include /etc/nginx/mime.types;
+	default_type application/octet-stream;
+
+	ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # Dropping SSLv3, ref: POODLE
+	ssl_prefer_server_ciphers on;
+
+#	access_log /var/log/nginx/access.log;
+#	error_log /var/log/nginx/error.log;
+
+	gzip on;
+	gzip_disable "msie6";
+
+#	include /etc/nginx/conf.d/*.conf; #comment not to include unwanted stuff
+#	include /etc/nginx/sites-enabled/*; #comment to avoid default web server
+
+}
+
+stream {
+
+log_format proxy    '$remote_addr - - [$time_local] '
+                    '$protocol $status $bytes_sent $bytes_received '
+                    '$session_time "$upstream_addr" '
+                    '"$upstream_bytes_sent" "$upstream_bytes_received" "$upstream_connect_time"';
+
+
+{% for rule in item.proxy_rule %}
+
+server {
+{% if rule.proto == "tcp" %}
+    listen {{ rule.frontend_port }}; 
+    access_log /var/log/nginx/access.log proxy;
+    proxy_timeout 1s; 
+{% elif rule.proto == "udp" %}
+    listen {{ rule.frontend_port }} udp;
+    access_log /var/log/nginx/access.log proxy;
+    proxy_responses 0; # udp balancing relevant. disable healthchecks
+{% endif %}
+    proxy_pass {{ item.uid }}_{{ rule.proto }}_{{ rule.backend_port }};
+
+ }
+
+upstream {{ item.uid }}_{{ rule.proto }}_{{ rule.backend_port }} {
+{% if item.affinity == "least-conn" %}
+    least_conn;
+{% elif item.affinity == "client-ip" %}
+    hash $remote_addr consistent;
+    # ip_hash; #does not work
+{% endif %}
+
+{% for node in item.backend_ip %}
+    server {{ node }}:{{ rule.backend_port }};
+{% endfor %}
+ }
+
+{% endfor %}
+
+}
+

@@ -1,0 +1,13 @@
+[all] 
+
+[buda:children]
+buda-master
+buda-slave
+
+[buda-master]
+3.3.3.3
+
+[buda-slave]
+3.3.3.4
+
+

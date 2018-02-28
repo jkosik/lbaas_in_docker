@@ -1,0 +1,51 @@
+---
+### keepalived options ###
+name: dockerd
+interface: ens3
+virtual_router_id: 57 #vip0
+unicast: True
+auth_type: PASS
+auth_pass: CHANGEME
+virtual_ipaddresses:
+#docker-prod - neutron port-list | grep lbaas-prod-vip | cut -d'"' -f 8
+  - "10.235.13.38/25 dev ens3"
+  - "10.235.13.57/25 dev ens3"
+  - "10.235.13.67/25 dev ens3"
+  - "10.235.13.39/25 dev ens3"
+  - "10.235.13.52/25 dev ens3"
+  - "10.235.13.47/25 dev ens3"
+  - "10.235.13.66/25 dev ens3"
+  - "10.235.13.56/25 dev ens3"
+  - "10.235.13.58/25 dev ens3"
+  - "10.235.13.64/25 dev ens3"
+  - "10.235.13.60/25 dev ens3"
+  - "10.235.13.55/25 dev ens3"
+  - "10.235.13.48/25 dev ens3"
+  - "10.235.13.40/25 dev ens3"
+  - "10.235.13.45/25 dev ens3"
+  - "10.235.13.63/25 dev ens3"
+  - "10.235.13.53/25 dev ens3"
+  - "10.235.13.37/25 dev ens3"
+  - "10.235.13.51/25 dev ens3"
+  - "10.235.13.44/25 dev ens3"
+virtual_ipaddresses_excl:
+  - "10.235.13.68/25 dev ens3"
+  - "10.235.13.54/25 dev ens3"
+  - "10.235.13.49/25 dev ens3"
+  - "10.235.13.65/25 dev ens3"
+  - "10.235.13.46/25 dev ens3"
+  - "10.235.13.43/25 dev ens3"
+  - "10.235.13.42/25 dev ens3"
+  - "10.235.13.62/25 dev ens3"
+  - "10.235.13.61/25 dev ens3"
+  - "10.235.13.41/25 dev ens3"
+  - "10.235.13.59/25 dev ens3"
+  - "10.235.13.50/25 dev ens3"
+
+script: 'killall -0 dockerd'
+#track_scripts:
+track_scripts: chk_docker
+
+### environment ###
+docker_proxy: true
+apt_proxy: true

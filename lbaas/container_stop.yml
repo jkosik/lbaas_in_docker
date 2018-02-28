@@ -1,0 +1,17 @@
+---
+
+- hosts: buda
+  become: yes
+  tasks:
+    - name: Stopping containers in BUDA
+      raw: "docker stop $(docker container ls -q)"
+      ignore_errors: true
+
+- hosts: buda
+  become: yes
+  tasks:
+    - name: Removing containers in BUDA
+      raw: "docker rm $(docker container ls -qa)"
+      ignore_errors: true
+
+

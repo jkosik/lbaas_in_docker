@@ -1,0 +1,9 @@
+---
+- hosts: all
+  become: yes
+  gather_facts: false
+- include: prerequisites.yml
+- include: keepalived.yml
+- include: docker.yml
+- include: logging.yml
+- include: local-address.yml
